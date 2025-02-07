@@ -2,6 +2,7 @@ version = 1
 requires-python = ">=3.9"
 
 [[package]]
+<<<<<<< HEAD
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -11,6 +12,8 @@ wheels = [
 ]
 
 [[package]]
+=======
+>>>>>>> 756ae13 (API stats)
 name = "attrs"
 version = "25.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -181,7 +184,10 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "bs4" },
+<<<<<<< HEAD
     { name = "pydantic" },
+=======
+>>>>>>> 756ae13 (API stats)
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "selenium" },
@@ -191,7 +197,10 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "bs4", specifier = ">=0.0.2" },
+<<<<<<< HEAD
     { name = "pydantic", specifier = ">=2.10.6" },
+=======
+>>>>>>> 756ae13 (API stats)
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "selenium", specifier = ">=4.28.1" },
@@ -229,6 +238,7 @@ wheels = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "pydantic"
 version = "2.10.6"
 source = { registry = "https://pypi.org/simple" }
@@ -340,6 +350,8 @@ wheels = [
 ]
 
 [[package]]
+=======
+>>>>>>> 756ae13 (API stats)
 name = "pysocks"
 version = "1.7.1"
 source = { registry = "https://pypi.org/simple" }

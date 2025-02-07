@@ -1,0 +1,133 @@
+{
+  "start_time": "2025-06-12T16:24:24.414986",
+  "seasons": {
+    "2024": {
+      "REG": {
+        "season": 2024,
+        "season_type": "REG",
+        "weeks_processed": 0,
+        "total_games": 0,
+        "successful_games": 0,
+        "failed_games": 0,
+        "total_plays": 0,
+        "errors": [
+          {
+            "week": 1,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 2,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 3,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 4,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 5,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 6,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 7,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 8,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 9,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 10,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 11,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 12,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 13,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 14,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 15,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 16,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 17,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          },
+          {
+            "week": 18,
+            "error": "[Errno 32] Broken pipe",
+            "season": 2024,
+            "season_type": "REG"
+          }
+        ]
+      }
+    }
+  },
+  "summary": {
+    "total_games": 0,
+    "successful_games": 0,
+    "failed_games": 0,
+    "total_plays": 0
+  },
+  "end_time": "2025-06-12T16:24:43.940883"
+}

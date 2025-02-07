@@ -1,0 +1,354 @@
+{
+  "start_time": "2025-06-12T16:28:24.980368",
+  "seasons": {
+    "2022": {
+      "REG": {
+        "season": 2022,
+        "season_type": "REG",
+        "weeks_processed": 18,
+        "total_games": 272,
+        "successful_games": 272,
+        "failed_games": 0,
+        "total_plays": 0,
+        "errors": []
+      },
+      "POST": {
+        "season": 2022,
+        "season_type": "POST",
+        "weeks_processed": 4,
+        "total_games": 13,
+        "successful_games": 0,
+        "failed_games": 13,
+        "total_plays": 0,
+        "errors": [
+          {
+            "week": 1,
+            "game_id": "b513b28d-8fd6-11ed-9789-5c606116f089",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "4f7ad01f-8fd6-11ed-9789-5c606116f089",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "f4ed1058-8fd5-11ed-9789-5c606116f089",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "27a7c406-8fd6-11ed-9789-5c606116f089",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "73f9964d-8fd6-11ed-9789-5c606116f089",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "92a33669-8fd6-11ed-9789-5c606116f089",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "26af553e-9556-11ed-b824-0d7028be3cee",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "0399c7f4-9556-11ed-b824-0d7028be3cee",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "4d476c73-9556-11ed-b824-0d7028be3cee",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "6f445459-9556-11ed-b824-0d7028be3cee",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 3,
+            "game_id": "44497169-9a0b-11ed-99e5-6b206f74937e",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 3,
+            "game_id": "b271e50f-9aa9-11ed-99e5-6b206f74937e",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          },
+          {
+            "week": 4,
+            "game_id": "70e5ba20-9aaa-11ed-99e5-6b206f74937e",
+            "error": "No data returned",
+            "season": 2022,
+            "season_type": "POST"
+          }
+        ]
+      }
+    },
+    "2023": {
+      "REG": {
+        "season": 2023,
+        "season_type": "REG",
+        "weeks_processed": 18,
+        "total_games": 272,
+        "successful_games": 272,
+        "failed_games": 0,
+        "total_plays": 0,
+        "errors": []
+      },
+      "POST": {
+        "season": 2023,
+        "season_type": "POST",
+        "weeks_processed": 4,
+        "total_games": 13,
+        "successful_games": 0,
+        "failed_games": 13,
+        "total_plays": 0,
+        "errors": [
+          {
+            "week": 1,
+            "game_id": "66bfe042-add1-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "08a71e61-add2-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "85495b4f-add1-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "48e8b94b-add1-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "d6c41f14-add1-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "a4727084-add1-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "68e4d4c8-b341-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "dc73faa3-b341-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "b7f163aa-b341-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "94002179-b341-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 3,
+            "game_id": "949aee0d-b341-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 3,
+            "game_id": "0d08ffe4-b342-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          },
+          {
+            "week": 4,
+            "game_id": "674ddfc1-b342-11ee-aec3-7d8f81bc70be",
+            "error": "No data returned",
+            "season": 2023,
+            "season_type": "POST"
+          }
+        ]
+      }
+    },
+    "2024": {
+      "REG": {
+        "season": 2024,
+        "season_type": "REG",
+        "weeks_processed": 18,
+        "total_games": 272,
+        "successful_games": 272,
+        "failed_games": 0,
+        "total_plays": 0,
+        "errors": []
+      },
+      "POST": {
+        "season": 2024,
+        "season_type": "POST",
+        "weeks_processed": 4,
+        "total_games": 13,
+        "successful_games": 0,
+        "failed_games": 13,
+        "total_plays": 0,
+        "errors": [
+          {
+            "week": 1,
+            "game_id": "bcd3e695-cbd8-11ef-88ab-663bf7d456c2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "8db6f73a-cbd3-11ef-88ab-663bf7d456c2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "e86f7d18-cbd7-11ef-88ab-663bf7d456c2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "341a76e0-cbd8-11ef-88ab-663bf7d456c2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "ae326e76-cbd2-11ef-88ab-663bf7d456c2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 1,
+            "game_id": "f3ea6b85-cbd2-11ef-88ab-663bf7d456c2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "b63d7b03-d164-11ef-bc5c-bb619a5d558e",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "71fb3bcd-d165-11ef-bc5c-bb619a5d558e",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "25906cba-d165-11ef-bc5c-bb619a5d558e",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 2,
+            "game_id": "64d94c4a-d164-11ef-bc5c-bb619a5d558e",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 3,
+            "game_id": "12bd1cfd-d5fc-11ef-929f-5655038981b2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 3,
+            "game_id": "d2efe086-d5fb-11ef-929f-5655038981b2",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          },
+          {
+            "week": 4,
+            "game_id": "882c1e9c-dc59-11ef-8d24-59614ea9df0f",
+            "error": "No data returned",
+            "season": 2024,
+            "season_type": "POST"
+          }
+        ]
+      }
+    }
+  },
+  "summary": {
+    "total_games": 855,
+    "successful_games": 816,
+    "failed_games": 39,
+    "total_plays": 0
+  },
+  "end_time": "2025-06-12T16:34:51.736300"
+}

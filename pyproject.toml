@@ -6,11 +6,15 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "bs4>=0.0.2",
+<<<<<<< HEAD
     "pydantic>=2.10.6",
+=======
+>>>>>>> 756ae13 (API stats)
     "python-dotenv>=1.0.1",
     "requests>=2.32.3",
     "selenium>=4.28.1",
     "webdriver-manager>=4.0.2",
+<<<<<<< HEAD
     "sqlalchemy>=2.0.36",
 ]
 
@@ -23,3 +27,6 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=. --cov-report=term-missing"
+=======
+]
+>>>>>>> 756ae13 (API stats)
