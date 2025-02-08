@@ -191,13 +191,13 @@ class GameScore(BaseModel):
     home_team_score: TeamScore = Field(alias='homeTeamScore')
 
 class GameSite(BaseModel):
-    smart_id: Optional[str] = Field(None, alias='smartId')
-    site_id: Optional[int] = Field(None, alias='siteId')
-    site_full_name: Optional[str] = Field(None, alias='siteFullName')
-    site_city: Optional[str] = Field(None, alias='siteCity')
-    site_state: Optional[str] = Field(None, alias='siteState')
-    postal_code: Optional[str] = Field(None, alias='postalCode')
-    roof_type: Optional[str] = Field(None, alias='roofType')
+    smart_id: str = Field(alias='smartId')
+    site_id: int = Field(alias='siteId')
+    site_full_name: str = Field(alias='siteFullName')
+    site_city: str = Field(alias='siteCity')
+    site_state: str = Field(alias='siteState')
+    postal_code: str = Field(alias='postalCode')
+    roof_type: str = Field(alias='roofType')
 
 class ScheduleTeam(BaseModel):
     team_id: str = Field(alias='teamId')
@@ -278,6 +278,7 @@ class Game(BaseModel):
     situation: GameSituation
     betting: Optional[BettingOdds] = Field(default_factory=BettingOdds)
     metadata: Optional[Dict] = {}
+    plays: Optional[List[Play]] = Field(default_factory=list)
     plays: Optional[List[Play]] = Field(default_factory=list)
 
 class WeekData(BaseModel):
