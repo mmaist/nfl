@@ -1,0 +1,219 @@
+{
+    "seasons": {
+        "2024": {
+            "types": {
+                "REG": {
+                    "weeks": {
+                        "WEEK_1": {
+                            "metadata": {
+                                "season": 2024,
+                                "season_type": "REG",
+                                "week": "WEEK_1",
+                                "timestamp": "2025-02-07T16:48:29.940188"
+                            },
+                            "games": [
+                                {
+                                    "game_info": {
+                                        "id": "7d3e8f84-1312-11ef-afd1-646009f18b2e",
+                                        "season": 2024,
+                                        "season_type": "REG",
+                                        "week": "WEEK_1",
+                                        "status": "FINAL",
+                                        "display_status": "Final",
+                                        "game_state": "POST",
+                                        "attendance": 73611,
+                                        "weather": "Temp: 67\u00b0 F, Humidity: 53%, Wind: NE 8 mph",
+                                        "gamebook_url": "https://static.www.nfl.com/image/upload/v1725620489/gamecenter/7d3e8f84-1312-11ef-afd1-646009f18b2e.pdf",
+                                        "date": "09/05/2024",
+                                        "time": "20:20:00",
+                                        "network": "NBC"
+                                    },
+                                    "venue": {
+                                        "smartId": "00081552-5c92-a7d0-fa55-fc0bb887fb88",
+                                        "siteId": 1552,
+                                        "siteFullName": "GEHA Field at Arrowhead Stadium",
+                                        "siteCity": "Kansas City",
+                                        "siteState": "MO",
+                                        "postalCode": "64129",
+                                        "roofType": "OUTDOOR"
+                                    },
+                                    "broadcast": {},
+                                    "teams": {
+                                        "home": {
+                                            "info": {
+                                                "id": "10402310-a47e-10ea-7442-16b633633637",
+                                                "name": "Kansas City Chiefs",
+                                                "nickname": "Chiefs",
+                                                "logo": "https://static.www.nfl.com/{formatInstructions}/league/api/clubs/logos/KC",
+                                                "abbreviation": "KC",
+                                                "location": {
+                                                    "city_state": "Kansas City",
+                                                    "conference": "AFC",
+                                                    "division": "ACW"
+                                                }
+                                            },
+                                            "game_stats": {
+                                                "score": {
+                                                    "q1": 7,
+                                                    "q2": 6,
+                                                    "q3": 7,
+                                                    "q4": 7,
+                                                    "ot": 0,
+                                                    "total": 27
+                                                },
+                                                "timeouts": {
+                                                    "remaining": 2,
+                                                    "used": 1
+                                                },
+                                                "possession": false
+                                            }
+                                        },
+                                        "away": {
+                                            "info": {
+                                                "id": "10400325-48de-3d6a-be29-8f829437f4c8",
+                                                "name": "Baltimore Ravens",
+                                                "nickname": "Ravens",
+                                                "logo": "https://static.www.nfl.com/{formatInstructions}/league/api/clubs/logos/BAL",
+                                                "abbreviation": "BAL",
+                                                "location": {
+                                                    "city_state": "Baltimore",
+                                                    "conference": "AFC",
+                                                    "division": "ACN"
+                                                }
+                                            },
+                                            "game_stats": {
+                                                "score": {
+                                                    "q1": 7,
+                                                    "q2": 3,
+                                                    "q3": 0,
+                                                    "q4": 10,
+                                                    "ot": 0,
+                                                    "total": 20
+                                                },
+                                                "timeouts": {
+                                                    "remaining": 0,
+                                                    "used": 4
+                                                },
+                                                "possession": true
+                                            }
+                                        }
+                                    },
+                                    "situation": {
+                                        "clock": "00:00",
+                                        "quarter": "END_OF_GAME",
+                                        "down": 4,
+                                        "distance": 10,
+                                        "yard_line": "KC 10",
+                                        "is_red_zone": false,
+                                        "is_goal_to_go": false
+                                    },
+                                    "betting": {
+                                        "moneyline": {
+                                            "homePrice": "-148",
+                                            "awayPrice": "+124"
+                                        },
+                                        "spread": {
+                                            "awayHandicap": "+3",
+                                            "homeHandicap": "-3",
+                                            "homePrice": "-105",
+                                            "awayPrice": "-115"
+                                        },
+                                        "totals": {
+                                            "underHandicap": 47.0,
+                                            "overHandicap": 47.0,
+                                            "overPrice": -112,
+                                            "underPrice": -108
+                                        },
+                                        "updatedAt": "2024-09-05T22:50:04Z"
+                                    },
+                                    "metadata": {
+                                        "gameKey": 59508,
+                                        "gameDate": "09/05/2024",
+                                        "gameId": 2024090500,
+                                        "gameTime": "2024-09-06T00:20:00Z",
+                                        "gameTimeEastern": "20:20:00",
+                                        "gameType": "REG",
+                                        "homeDisplayName": "Kansas City Chiefs",
+                                        "homeNickname": "Chiefs",
+                                        "homeTeam": {
+                                            "teamId": "2310",
+                                            "smartId": "10402310-a47e-10ea-7442-16b633633637",
+                                            "logo": "https://static.www.nfl.com/{formatInstructions}/league/api/clubs/logos/KC",
+                                            "abbr": "KC",
+                                            "cityState": "Kansas City",
+                                            "fullName": "Kansas City Chiefs",
+                                            "nick": "Chiefs",
+                                            "teamType": "TEAM",
+                                            "conferenceAbbr": "AFC",
+                                            "divisionAbbr": "ACW"
+                                        },
+                                        "homeTeamAbbr": "KC",
+                                        "homeTeamId": "2310",
+                                        "isoTime": 1725582000000,
+                                        "networkChannel": "NBC",
+                                        "ngsGame": true,
+                                        "season": 2024,
+                                        "seasonType": "REG",
+                                        "site": {
+                                            "smartId": "00081552-5c92-a7d0-fa55-fc0bb887fb88",
+                                            "siteId": 1552,
+                                            "siteFullName": "GEHA Field at Arrowhead Stadium",
+                                            "siteCity": "Kansas City",
+                                            "siteState": "MO",
+                                            "postalCode": "64129",
+                                            "roofType": "OUTDOOR"
+                                        },
+                                        "smartId": "7d3e8f84-1312-11ef-afd1-646009f18b2e",
+                                        "visitorDisplayName": "Baltimore Ravens",
+                                        "visitorNickname": "Ravens",
+                                        "visitorTeam": {
+                                            "teamId": "0325",
+                                            "smartId": "10400325-48de-3d6a-be29-8f829437f4c8",
+                                            "logo": "https://static.www.nfl.com/{formatInstructions}/league/api/clubs/logos/BAL",
+                                            "abbr": "BAL",
+                                            "cityState": "Baltimore",
+                                            "fullName": "Baltimore Ravens",
+                                            "nick": "Ravens",
+                                            "teamType": "TEAM",
+                                            "conferenceAbbr": "AFC",
+                                            "divisionAbbr": "ACN"
+                                        },
+                                        "visitorTeamAbbr": "BAL",
+                                        "visitorTeamId": "0325",
+                                        "week": 1,
+                                        "weekNameAbbr": "Week 1",
+                                        "liveDotsGame": true,
+                                        "score": {
+                                            "time": "00:00",
+                                            "phase": "FINAL",
+                                            "visitorTeamScore": {
+                                                "pointTotal": 20,
+                                                "pointQ1": 7,
+                                                "pointQ2": 3,
+                                                "pointQ3": 0,
+                                                "pointQ4": 10,
+                                                "pointOT": 0,
+                                                "timeoutsRemaining": 0
+                                            },
+                                            "homeTeamScore": {
+                                                "pointTotal": 27,
+                                                "pointQ1": 7,
+                                                "pointQ2": 6,
+                                                "pointQ3": 7,
+                                                "pointQ4": 7,
+                                                "pointOT": 0,
+                                                "timeoutsRemaining": 2
+                                            }
+                                        },
+                                        "validated": true,
+                                        "releasedToClubs": true
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
