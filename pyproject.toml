@@ -12,3 +12,10 @@ dependencies = [
     "selenium>=4.28.1",
     "webdriver-manager>=4.0.2",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=. --cov-report=term-missing"
