@@ -18,7 +18,7 @@ from models import (
     NFLData, SeasonData, SeasonTypeData, WeekData, Game, GameInfo,
     Teams, Team, TeamInfo, TeamLocation, TeamGameStats,
     GameSituation, Venue, BettingOdds, Score, Timeouts, PlaysResponse,
-    PlaySummary
+    PlaySummary, Play
 )
 from db_utils import NFLDatabaseManager
 
@@ -34,12 +34,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class NFLGameScraper:
-    def __init__(self, email=None, password=None, api_only=False, use_database=True, db_path="nfl_data.db"):
+    def __init__(self, email=None, password=None, api_only=False, use_database=True, db_path="nfl_data.db", skip_play_summaries=False):
         # Store credentials
         self.email = email
         self.password = password
         self.api_only = api_only
-        self.bearer_token = os.getenv('BEARER_TOKEN')
+        self.skip_play_summaries = skip_play_summaries
+        
+        # Load bearer token - handle potential dotenv escaping issues
+        self.bearer_token = self._load_bearer_token()
         self.use_database = use_database
         
         # Initialize database manager if enabled
@@ -57,6 +60,28 @@ class NFLGameScraper:
                        status_forcelist=[500, 502, 503, 504])
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
+    def _load_bearer_token(self):
+        """Load bearer token, handling potential dotenv escaping issues."""
+        # First try normal dotenv
+        token = os.getenv('BEARER_TOKEN')
+        
+        # If token seems wrong (too long), try direct file read
+        if token and len(token) > 1700:
+            try:
+                with open('.env', 'r') as f:
+                    for line in f:
+                        if line.startswith('BEARER_TOKEN='):
+                            # Get token without the BEARER_TOKEN= prefix and strip newline
+                            token = line[13:].strip()
+                            logger.info(f"Loaded bearer token directly from file (length: {len(token)})")
+                            return token
+            except Exception as e:
+                logger.warning(f"Failed to read token from .env file: {e}")
+        
+        if token:
+            logger.info(f"Loaded bearer token from environment (length: {len(token)})")
+        return token
+        
         # Initialize browser only if not in API-only mode
         if not api_only:
             # Initialize Chrome options
@@ -214,30 +239,46 @@ class NFLGameScraper:
             }
             
             logger.info(f"Fetching plays for game {game_id}")
+            logger.info(f"Request URL: {url}")
             response = self.session.get(url, headers=headers)
+            
+            if response.status_code == 401:
+                logger.error(f"Authentication failed (401) for plays API.")
+                logger.error(f"Please ensure your BEARER_TOKEN is valid and not expired.")
+                return None
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch plays: HTTP {response.status_code}")
+                logger.error(f"Response: {response.text[:500]}")
+                return None
+                
             response.raise_for_status()
             
             data = response.json()
+            logger.debug(f"Plays API response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
             plays_response = PlaysResponse.model_validate(data)
             logger.info(f"Successfully fetched {plays_response.count} plays for game {game_id}")
             
-            # Fetch summary for each play
-            for i, play in enumerate(plays_response.plays, 1):
-                try:
-                    logger.info(f"[Game {game_id}] Processing play {play.play_id} ({i}/{plays_response.count})")
-                    logger.debug(f"Play details: Quarter {play.quarter}, Clock {play.game_clock}, Type {play.play_type}")
-                    
-                    summary = self.get_play_summary(game_id, play.play_id)
-                    if summary:
-                        play.summary = summary
-                        logger.info(f"[Game {game_id}] Successfully processed play {play.play_id}: {summary.play.play_description[:100]}...")
-                    else:
-                        logger.warning(f"[Game {game_id}] No summary found for play {play.play_id}")
-                    
-                    time.sleep(0.1)  # Small delay between requests
-                except Exception as e:
-                    logger.error(f"[Game {game_id}] Error processing play {play.play_id}: {str(e)}")
-                    continue
+            # Fetch summary for each play (unless skipped)
+            if not self.skip_play_summaries:
+                for i, play in enumerate(plays_response.plays, 1):
+                    try:
+                        logger.info(f"[Game {game_id}] Processing play {play.play_id} ({i}/{plays_response.count})")
+                        logger.debug(f"Play details: Quarter {play.quarter}, Clock {play.game_clock}, Type {play.play_type}")
+                        
+                        summary = self.get_play_summary(game_id, play.play_id)
+                        if summary:
+                            play.summary = summary
+                            logger.info(f"[Game {game_id}] Successfully processed play {play.play_id}: {summary.play.play_description[:100]}...")
+                        else:
+                            logger.warning(f"[Game {game_id}] No summary found for play {play.play_id}")
+                        
+                        time.sleep(0.1)  # Small delay between requests
+                    except Exception as e:
+                        logger.error(f"[Game {game_id}] Error processing play {play.play_id}: {str(e)}")
+                        continue
+            else:
+                logger.info(f"Skipping play summaries as requested")
             
             return plays_response
             
@@ -383,38 +424,99 @@ class NFLGameScraper:
 
         return game_data
 
-    def scrape_game_plays(self, game_data: Dict) -> List[Dict]:
-        """Scrape all plays from a specific game using the game data from API."""
+    def fetch_game_plays_api(self, season: int, season_type: str, week: str, game_id: str) -> List[Play]:
+        """Fetch plays for a game using the API endpoint."""
+        try:
+            url = f"https://pro.nfl.com/api/secured/videos/filmroom/plays"
+            params = {
+                "season": season,
+                "seasonType": season_type,
+                "weekSlug": week,
+                "gameId": game_id
+            }
+            headers = {
+                "Authorization": f"Bearer {self.bearer_token}",
+                "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            
+            logger.info(f"Fetching plays for game {game_id} via API")
+            response = self.session.get(url, params=params, headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Parse the response into Play objects
+            if 'plays' in data:
+                plays_response = PlaysResponse.model_validate(data)
+                logger.info(f"Successfully fetched {plays_response.count} plays for game {game_id}")
+                return plays_response.plays
+            else:
+                logger.warning(f"No plays found in API response for game {game_id}")
+                return []
+                
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                logger.error(f"Authentication failed for plays API (401 Unauthorized).")
+                logger.error(f"Please check that your BEARER_TOKEN in .env is valid and not expired.")
+                logger.error(f"You may need to refresh your token from the NFL Pro website.")
+            else:
+                logger.error(f"HTTP error fetching plays for game {game_id}: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching plays for game {game_id}: {e}")
+            return []
+    
+    def scrape_game_plays(self, game_data: Game) -> List[Play]:
+        """Fetch plays for a game, using API if available, otherwise fall back to web scraping."""
+        game_id = game_data.game_info.id
+        season = game_data.game_info.season
+        season_type = game_data.game_info.season_type
+        week = game_data.game_info.week
+        
+        # First try API endpoint if we have a bearer token
+        if self.bearer_token:
+            plays = self.fetch_game_plays_api(season, season_type, week, game_id)
+            if plays:
+                return plays
+            logger.warning(f"Failed to fetch plays via API for game {game_id}, falling back to web scraping")
+        
+        # Fall back to web scraping if API fails or no bearer token
+        if self.api_only:
+            logger.warning(f"In API-only mode and play API failed for game {game_id}")
+            return []
+            
         try:
             game_url = self.generate_game_url(
-                season=game_data['game_info']['season'],
-                season_type=game_data['game_info']['season_type'],
-                week=game_data['game_info']['week'],
-                game_id=game_data['game_info']['id']
+                season=season,
+                season_type=season_type,
+                week=week,
+                game_id=game_id
             )
             
-            print(f"\nScraping plays from: {game_url}")
+            logger.info(f"Attempting to scrape plays from: {game_url}")
             self.driver.get(game_url)
             time.sleep(3)  # Wait for page load
             
-            # TODO: Implement play scraping logic here
-            # This will be implemented once we analyze the play page structure
-            plays = []
-            
-            return plays
+            # TODO: Implement web scraping logic here
+            # This would require analyzing the page structure
+            logger.warning(f"Web scraping for plays not yet implemented for game {game_id}")
+            return []
             
         except Exception as e:
-            print(f"Error scraping plays for game {game_data['game_info']['id']}: {str(e)}")
+            logger.error(f"Error scraping plays for game {game_id}: {e}")
             return []
 
-    def scrape_all_games(self, start_season: int = 2024, end_season: int = 2024) -> Dict:
+    def scrape_all_games(self, start_season: int = 2024, end_season: int = 2024) -> NFLData:
         """
         First fetch all game data from APIs, then scrape plays for each game.
         Returns a structured dictionary with full game information including plays.
         """
-        if not self.login():
-            print("Failed to login. Cannot proceed with scraping.")
-            return {}
+        # Only login if we're not in API-only mode and don't have a bearer token
+        if not self.api_only and not self.bearer_token:
+            if not self.login():
+                print("Failed to login. Cannot proceed with scraping.")
+                return NFLData(seasons={}, metadata={})
 
         # First get all game data from APIs
         print("Fetching game data from APIs...")
@@ -423,20 +525,25 @@ class NFLGameScraper:
         # Now enhance the data with scraped plays
         print("\nStarting to scrape plays for each game...")
         
-        for season in all_data['seasons']:
-            for season_type in all_data['seasons'][season]['types']:
-                for week in all_data['seasons'][season]['types'][season_type]['weeks']:
-                    week_data = all_data['seasons'][season]['types'][season_type]['weeks'][week]
+        for season in all_data.seasons:
+            for season_type in all_data.seasons[season].types:
+                for week in all_data.seasons[season].types[season_type].weeks:
+                    week_data = all_data.seasons[season].types[season_type].weeks[week]
                     
-                    for game in week_data['games']:
+                    for game in week_data.games:
                         try:
-                            print(f"\nProcessing plays for: {game['teams']['away']['team']['info']['name']} @ {game['teams']['home']['team']['info']['name']}")
+                            print(f"\nProcessing plays for: {game.teams.away.info.name} @ {game.teams.home.info.name}")
                             
-                            # Scrape plays for this game
-                            plays = self.scrape_game_plays(game)
+                            # Fetch plays for this game
+                            plays = self.fetch_game_plays_api(
+                                season=game.game_info.season,
+                                season_type=game.game_info.season_type,
+                                week=game.game_info.week,
+                                game_id=game.game_info.id
+                            )
                             
                             # Add plays to game data
-                            game['plays'] = plays
+                            game.plays = plays
                             
                             # Save progress after each game
                             self.save_progress(all_data, prefix='full_game_data')
@@ -718,6 +825,144 @@ class NFLGameScraper:
             logger.error(f"Error fetching API data: {str(e)}")
             return WeekData(metadata={}, games=[])
 
+    def scrape_single_game(self, game_id: str, season: int = 2024, season_type: str = 'REG', week: str = 'WEEK_1') -> Optional[Game]:
+        """Scrape data for a single game by its ID."""
+        try:
+            logger.info(f"Scraping single game: {game_id}")
+            
+            # Get game metadata
+            game_metadata = self.get_game_metadata(game_id)
+            if not game_metadata:
+                logger.error(f"Failed to fetch metadata for game {game_id}")
+                return None
+            
+            # Extract season info from metadata if available
+            if 'season' in game_metadata:
+                season = game_metadata['season']
+            if 'seasonType' in game_metadata:
+                season_type = game_metadata['seasonType']
+            if 'week' in game_metadata:
+                week = game_metadata['week']
+                # Convert week number to WEEK_X format if needed
+                if season_type == 'REG' and isinstance(week, int):
+                    week = f'WEEK_{week}'
+            
+            logger.info(f"Game details: Season {season}, Type {season_type}, Week {week}")
+            
+            # Get plays data
+            smart_id = game_metadata.get('smartId', game_id)
+            logger.info(f"Using game ID for plays: {smart_id} (original: {game_id})")
+            plays_data = self.get_plays_data(season, season_type, week, smart_id)
+            plays_list = plays_data.plays if plays_data else []
+            
+            # Get additional data
+            live_scores = self.get_live_scores(season, season_type, week)
+            odds_data = self.get_odds_data(season, season_type, week)
+            
+            # Find this specific game in live scores
+            game_live_data = None
+            if live_scores and 'games' in live_scores:
+                for game in live_scores['games']:
+                    if game.get('gameId') == game_id:
+                        game_live_data = game
+                        break
+            
+            # Find odds for this game
+            game_odds = None
+            if odds_data and 'games' in odds_data:
+                home_abbr = game_metadata.get('homeTeam', {}).get('abbr')
+                away_abbr = game_metadata.get('visitorTeam', {}).get('abbr')
+                for odds in odds_data['games']:
+                    if (odds.get('homeTeamAbbr') == home_abbr and 
+                        odds.get('visitorTeamAbbr') == away_abbr):
+                        game_odds = BettingOdds.model_validate(odds)
+                        break
+            
+            # Create team objects
+            home_metadata = game_metadata.get('homeTeam', {})
+            away_metadata = game_metadata.get('visitorTeam', {})
+            
+            home_team = Team(
+                info=TeamInfo(
+                    id=home_metadata.get('smartId'),
+                    name=home_metadata.get('fullName'),
+                    nickname=home_metadata.get('nick'),
+                    logo=home_metadata.get('logo'),
+                    abbreviation=home_metadata.get('abbr'),
+                    location=TeamLocation(
+                        city_state=home_metadata.get('cityState'),
+                        conference=home_metadata.get('conferenceAbbr'),
+                        division=home_metadata.get('divisionAbbr')
+                    )
+                ),
+                game_stats=TeamGameStats(
+                    score=Score(**game_live_data.get('homeTeam', {}).get('score', {})) if game_live_data else Score(),
+                    timeouts=Timeouts(**game_live_data.get('homeTeam', {}).get('timeouts', {})) if game_live_data else Timeouts(),
+                    possession=game_live_data.get('homeTeam', {}).get('hasPossession', False) if game_live_data else False
+                )
+            )
+            
+            away_team = Team(
+                info=TeamInfo(
+                    id=away_metadata.get('smartId'),
+                    name=away_metadata.get('fullName'),
+                    nickname=away_metadata.get('nick'),
+                    logo=away_metadata.get('logo'),
+                    abbreviation=away_metadata.get('abbr'),
+                    location=TeamLocation(
+                        city_state=away_metadata.get('cityState'),
+                        conference=away_metadata.get('conferenceAbbr'),
+                        division=away_metadata.get('divisionAbbr')
+                    )
+                ),
+                game_stats=TeamGameStats(
+                    score=Score(**game_live_data.get('awayTeam', {}).get('score', {})) if game_live_data else Score(),
+                    timeouts=Timeouts(**game_live_data.get('awayTeam', {}).get('timeouts', {})) if game_live_data else Timeouts(),
+                    possession=game_live_data.get('awayTeam', {}).get('hasPossession', False) if game_live_data else False
+                )
+            )
+            
+            # Create game object
+            game_data = Game(
+                game_info=GameInfo(
+                    id=game_id,
+                    season=season,
+                    season_type=season_type,
+                    week=week,
+                    status=game_live_data.get('phase') if game_live_data else None,
+                    display_status=game_live_data.get('displayStatus') if game_live_data else None,
+                    game_state=game_live_data.get('gameState') if game_live_data else None,
+                    attendance=game_live_data.get('attendance') if game_live_data else None,
+                    weather=game_live_data.get('weather') if game_live_data else None,
+                    gamebook_url=game_live_data.get('gameBookUrl') if game_live_data else None,
+                    date=game_metadata.get('gameDate'),
+                    time=game_metadata.get('gameTimeEastern'),
+                    network=game_metadata.get('networkChannel')
+                ),
+                venue=Venue.model_validate(game_metadata.get('site', {})) if 'site' in game_metadata else None,
+                broadcast=game_live_data.get('broadcastInfo', {}) if game_live_data else {},
+                teams=Teams(home=home_team, away=away_team),
+                situation=GameSituation(
+                    clock=game_live_data.get('clock') if game_live_data else None,
+                    quarter=game_live_data.get('quarter') if game_live_data else None,
+                    down=game_live_data.get('down') if game_live_data else None,
+                    distance=game_live_data.get('distance') if game_live_data else None,
+                    yard_line=game_live_data.get('yardLine') if game_live_data else None,
+                    is_red_zone=game_live_data.get('isRedZone') if game_live_data else None,
+                    is_goal_to_go=game_live_data.get('isGoalToGo') if game_live_data else None
+                ),
+                betting=game_odds,
+                metadata=game_metadata,
+                plays=plays_list
+            )
+            
+            logger.info(f"Successfully scraped game {game_id} with {len(plays_list)} plays")
+            return game_data
+            
+        except Exception as e:
+            logger.error(f"Error scraping single game {game_id}: {str(e)}")
+            return None
+
     def fetch_all_api_data(self, start_season: int = 2024, end_season: int = 2024, game_limit: Optional[int] = None) -> NFLData:
         """Fetch API data for all weeks and seasons within the specified range."""
         all_data = NFLData(
@@ -783,6 +1028,8 @@ def main():
     parser.add_argument('--game-limit', type=int, help='Limit the number of games to scrape per week')
     parser.add_argument('--no-database', action='store_true', help='Disable database storage and use JSON files only')
     parser.add_argument('--db-path', type=str, default='nfl_data.db', help='Path to SQLite database file')
+    parser.add_argument('--game-id', type=str, help='Scrape a specific game by its ID')
+    parser.add_argument('--skip-play-summaries', action='store_true', help='Skip fetching detailed play summaries')
     args = parser.parse_args()
     
     if not args.api_only and (not email or not password):
@@ -794,7 +1041,8 @@ def main():
         password=password, 
         api_only=args.api_only,
         use_database=not args.no_database,
-        db_path=args.db_path
+        db_path=args.db_path,
+        skip_play_summaries=args.skip_play_summaries
     )
     
     try:
@@ -812,6 +1060,30 @@ def main():
             except Exception as e:
                 logger.error(f"Error loading test data: {str(e)}")
                 return
+        
+        if args.game_id:
+            # Scrape a single game by ID
+            logger.info(f"Scraping single game: {args.game_id}")
+            game_data = scraper.scrape_single_game(args.game_id)
+            
+            if game_data:
+                # Save the game data
+                if scraper.use_database and scraper.db_manager:
+                    scraper.db_manager.save_game(game_data)
+                    logger.info(f"Saved game {args.game_id} to database")
+                else:
+                    # Save as JSON
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    os.makedirs('data', exist_ok=True)
+                    output_file = os.path.join('data', f'game_{args.game_id}_{timestamp}.json')
+                    
+                    with open(output_file, 'w') as f:
+                        json.dump(game_data.model_dump(by_alias=True), f, indent=4)
+                    
+                    logger.info(f"Saved game data to {output_file}")
+            else:
+                logger.error(f"Failed to scrape game {args.game_id}")
+            return
         
         if args.week:
             # Run for specific week only

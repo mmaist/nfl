@@ -128,6 +128,20 @@ class NFLDatabaseManager:
         # Remove existing plays for this game
         session.query(DBPlay).filter_by(game_id=db_game.id).delete()
         
+        # Collect all unique players from all plays first
+        all_players = {}
+        for play in plays:
+            if play.summary:
+                players = (play.summary.home or []) + (play.summary.away or [])
+                for player in players:
+                    # Use nfl_id as the unique key
+                    all_players[player.nfl_id] = player
+        
+        # Save all unique players once
+        if all_players:
+            self._save_players(list(all_players.values()), session)
+        
+        # Now save the plays
         for play in plays:
             db_play = DBPlay(
                 game_id=db_game.id,
@@ -194,17 +208,36 @@ class NFLDatabaseManager:
                     db_play.home_personnel_json = [p.dict() for p in play.summary.home]
                 if play.summary.away:
                     db_play.away_personnel_json = [p.dict() for p in play.summary.away]
-                    
-                # Save players
-                self._save_players(play.summary.home + play.summary.away, session)
             
             session.add(db_play)
             
     def _save_players(self, players: List[Player], session: Session):
         """Save or update player information"""
+        # Get all player IDs we need to process
+        player_ids = [player.nfl_id for player in players]
+        
+        # Fetch existing players in bulk
+        existing_players = session.query(DBPlayer).filter(
+            DBPlayer.nfl_id.in_(player_ids)
+        ).all()
+        existing_player_ids = {p.nfl_id for p in existing_players}
+        
+        # Update existing players
+        for db_player in existing_players:
+            # Find the corresponding player data
+            for player in players:
+                if player.nfl_id == db_player.nfl_id:
+                    # Update fields that might change
+                    db_player.team_id = player.team_id
+                    db_player.uniform_number = player.uniform_number
+                    db_player.position = player.position
+                    db_player.position_group = player.position_group
+                    break
+        
+        # Add new players
+        new_players = []
         for player in players:
-            db_player = session.query(DBPlayer).filter_by(nfl_id=player.nfl_id).first()
-            if not db_player:
+            if player.nfl_id not in existing_player_ids:
                 db_player = DBPlayer(
                     nfl_id=player.nfl_id,
                     gsis_id=player.gsis_id,
@@ -216,12 +249,11 @@ class NFLDatabaseManager:
                     uniform_number=player.uniform_number,
                     team_id=player.team_id
                 )
-                session.add(db_player)
-            else:
-                # Update existing player info
-                db_player.team_id = player.team_id
-                db_player.uniform_number = player.uniform_number
-                db_player.position = player.position
+                new_players.append(db_player)
+        
+        # Bulk add new players
+        if new_players:
+            session.bulk_save_objects(new_players)
                 
     def get_games(self, season: Optional[int] = None, week: Optional[str] = None, 
                   team_id: Optional[str] = None) -> List[DBGame]:
