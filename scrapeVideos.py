@@ -20,6 +20,7 @@ from models import (
     GameSituation, Venue, BettingOdds, Score, Timeouts, PlaysResponse,
     PlaySummary
 )
+from db_utils import NFLDatabaseManager
 
 # Configure logging
 logging.basicConfig(
@@ -33,12 +34,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class NFLGameScraper:
-    def __init__(self, email=None, password=None, api_only=False):
+    def __init__(self, email=None, password=None, api_only=False, use_database=True, db_path="nfl_data.db"):
         # Store credentials
         self.email = email
         self.password = password
         self.api_only = api_only
         self.bearer_token = os.getenv('BEARER_TOKEN')
+        self.use_database = use_database
+        
+        # Initialize database manager if enabled
+        if self.use_database:
+            self.db_manager = NFLDatabaseManager(db_path)
+            logger.info(f"Database storage enabled: {db_path}")
+        else:
+            self.db_manager = None
+            logger.info("Using JSON file storage")
         
         # Setup requests session with retry strategy
         self.session = requests.Session()
@@ -443,24 +453,39 @@ class NFLGameScraper:
         return all_data
 
     def save_progress(self, data: NFLData, prefix: str = None):
-        """Save the current progress to a JSON file."""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Determine the appropriate prefix based on the mode
-        if prefix is None:
-            prefix = 'api_data' if self.api_only else 'nfl_game_map'
+        """Save the current progress to database or JSON file."""
+        if self.use_database and self.db_manager:
+            # Save to database
+            saved_count = 0
+            for season in data.seasons.values():
+                for season_type_data in season.types.values():
+                    for week_data in season_type_data.weeks.values():
+                        for game in week_data.games:
+                            try:
+                                self.db_manager.save_game(game)
+                                saved_count += 1
+                            except Exception as e:
+                                logger.error(f"Error saving game {game.game_info.id} to database: {e}")
+            logger.info(f"Saved {saved_count} games to database")
+        else:
+            # Fall back to JSON file storage
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
-        # Create output directory if it doesn't exist
-        os.makedirs('data', exist_ok=True)
-        
-        # Generate filename with timestamp
-        output_file = os.path.join('data', f'{prefix}_{timestamp}.json')
-        
-        # Convert Pydantic model to JSON
-        with open(output_file, 'w') as f:
-            json.dump(data.model_dump(by_alias=True), f, indent=4)
-        
-        print(f"Progress saved to {output_file}")
+            # Determine the appropriate prefix based on the mode
+            if prefix is None:
+                prefix = 'api_data' if self.api_only else 'nfl_game_map'
+                
+            # Create output directory if it doesn't exist
+            os.makedirs('data', exist_ok=True)
+            
+            # Generate filename with timestamp
+            output_file = os.path.join('data', f'{prefix}_{timestamp}.json')
+            
+            # Convert Pydantic model to JSON
+            with open(output_file, 'w') as f:
+                json.dump(data.model_dump(by_alias=True), f, indent=4)
+            
+            print(f"Progress saved to {output_file}")
 
     def login(self):
         """Handle the NFL Pro login process."""
@@ -756,13 +781,21 @@ def main():
     parser.add_argument('--season-type', type=str, choices=['REG', 'POST'], default='REG', help='Season type (REG or POST)')
     parser.add_argument('--test-data', type=str, help='Use test data from specified JSON file instead of making API calls')
     parser.add_argument('--game-limit', type=int, help='Limit the number of games to scrape per week')
+    parser.add_argument('--no-database', action='store_true', help='Disable database storage and use JSON files only')
+    parser.add_argument('--db-path', type=str, default='nfl_data.db', help='Path to SQLite database file')
     args = parser.parse_args()
     
     if not args.api_only and (not email or not password):
         logger.error("Please ensure NFL_EMAIL and NFL_PASSWORD are set in your .env file")
         return
     
-    scraper = NFLGameScraper(email=email, password=password, api_only=args.api_only)
+    scraper = NFLGameScraper(
+        email=email, 
+        password=password, 
+        api_only=args.api_only,
+        use_database=not args.no_database,
+        db_path=args.db_path
+    )
     
     try:
         if args.test_data:
@@ -839,6 +872,9 @@ def main():
         
     finally:
         scraper.close()
+        # Close database connection if used
+        if scraper.db_manager:
+            scraper.db_manager.close()
 
 if __name__ == "__main__":
     main()
