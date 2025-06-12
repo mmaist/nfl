@@ -3,10 +3,15 @@
 Query utility for the NFL SQLite database.
 """
 import argparse
-from db_utils import NFLDatabaseManager
-from database import DBGame, DBPlay
+import sys
+import os
 import json
 from typing import Optional
+
+# Add parent directory to path to import from src
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.database.db_utils import NFLDatabaseManager
+from src.database.database import DBGame, DBPlay
 
 def print_game_summary(game: DBGame):
     """Print a summary of a game"""

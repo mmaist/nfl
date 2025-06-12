@@ -23,16 +23,16 @@ pip install -r requirements-test.txt
 ### Running the Scraper
 ```bash
 # Basic usage - scrape current week
-python scrapeVideos.py
-
-# API-only mode (no web scraping)
-python scrapeVideos.py --api-only
+python main.py --api-only
 
 # Scrape specific season/week
-python scrapeVideos.py --season 2024 --week 10
+python main.py --season 2024 --week 10
+
+# Scrape a specific game
+python main.py --game-id 2024010101
 
 # Test with sample data
-python scrapeVideos.py --test-data
+python main.py --test-data
 ```
 
 ### Testing
@@ -63,18 +63,22 @@ mypy .
 
 ### Core Components
 
-1. **scrapeVideos.py** - Main scraper implementation
-   - `NFLScraper` class handles all scraping logic
+1. **src/scraper/scraper.py** - Main scraper implementation
+   - `NFLGameScraper` class handles all scraping logic
    - Supports both API-only and full scraping modes
    - Uses Selenium for authenticated play data access
    - Implements retry logic and error handling
 
-2. **models.py** - Pydantic data models
+2. **src/models/models.py** - Pydantic data models
    - Hierarchical structure: NFLData → SeasonData → WeekData → Game → Play
    - Comprehensive models for all NFL data types
    - Built-in validation and serialization
 
-3. **Environment Configuration**
+3. **src/database/** - Database components
+   - `database.py`: SQLAlchemy models (DBGame, DBPlay, DBPlayer)
+   - `db_utils.py`: NFLDatabaseManager for database operations
+
+4. **Environment Configuration**
    - Requires `.env` file with:
      - `NFL_EMAIL` and `NFL_PASSWORD` for web scraping
      - `BEARER_TOKEN` for API authentication
@@ -89,7 +93,8 @@ mypy .
    - Play-by-play data (via API or web scraping)
    - Detailed play statistics
 3. Data is validated through Pydantic models
-4. Saved as timestamped JSON files in `data/` directory
+4. Saved to SQLite database via NFLDatabaseManager
+5. Optional JSON export to `data/` directory
 
 ### Key API Endpoints
 
@@ -111,11 +116,46 @@ For play prediction, the scraper captures critical features including:
 - **Team Stats**: Win probability, scoring trends
 - **Weather/Venue**: Stadium type, conditions (when available)
 
+## Project Structure
+
+The project has been reorganized for better maintainability:
+
+```
+nfl/
+├── src/                    # Core source code
+│   ├── scraper/           # Main scraping functionality  
+│   ├── database/          # Database models and utilities
+│   ├── models/            # Pydantic data models
+│   └── utils/             # Utility functions
+├── analysis/              # Data analysis scripts
+├── scripts/               # Utility and development scripts
+├── tests/                 # Test files
+├── data/                  # Data storage
+├── docs/                  # Documentation
+└── main.py               # Main entry point
+```
+
+### Analysis Tools
+
+The project includes comprehensive analysis tools:
+
+- **analyze_team_stats.py**: Team performance analysis with historical statistics
+- **analyze_game_script.py**: Game context and situational analysis
+- **analyze_play_results.py**: Play outcome metrics and success rates
+- **analyze_formations.py**: Formation tendencies and personnel analysis
+
+### Development Scripts
+
+- **test_new_fields.py**: Test and validate new database fields
+- **migrate_json_to_db.py**: Migrate existing JSON data to SQLite
+- **query_db.py**: Database query and export utilities
+- **debug_play_stats.py**: Debug play-level statistics
+
 ## Important Notes
 
 - The scraper handles rate limiting and retries automatically
 - Web scraping mode requires valid NFL.com credentials
 - Test data is available in `test_data/test_game.json` for development
 - The project uses uv for dependency management (see uv.lock)
-- Incremental saves are supported to prevent data loss during long scraping sessions
-- Data is structured to facilitate feature extraction for ML models
+- Database storage is now the default, with comprehensive schema
+- Data includes 100+ fields optimized for ML feature extraction

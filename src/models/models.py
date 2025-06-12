@@ -223,7 +223,7 @@ class GameSchedule(BaseModel):
     home_team: ScheduleTeam = Field(alias='homeTeam')
     home_team_abbr: str = Field(alias='homeTeamAbbr')
     home_team_id: str = Field(alias='homeTeamId')
-    iso_time: int = Field(alias='isoTime')
+    iso_time: Union[str, int] = Field(alias='isoTime')
     network_channel: str = Field(alias='networkChannel')
     ngs_game: bool = Field(alias='ngsGame')
     season: int

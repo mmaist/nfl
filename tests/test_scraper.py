@@ -1,10 +1,14 @@
 import pytest
 import json
 import os
+import sys
 from datetime import datetime
 from unittest.mock import Mock, patch
-from scrapeVideos import NFLGameScraper
-from models import NFLData, PlaySummary, PlaysResponse
+
+# Add src to path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.scraper.scraper import NFLGameScraper
+from src.models.models import NFLData, PlaySummary, PlaysResponse
 
 # Test data
 MOCK_PLAY_SUMMARY = {
@@ -17,11 +21,49 @@ MOCK_PLAY_SUMMARY = {
         "sequence": 1,
         "down": 1,
         "gameClock": "15:00",
+        "gameKey": 456,
+        "homeScore": 0,
+        "isBigPlay": False,
+        "isEndQuarter": False,
+        "isGoalToGo": False,
+        "isNoPlay": False,
+        "isPenalty": False,
+        "isPlaytimePlay": True,
+        "isSTPlay": False,
+        "isScoring": False,
         "playDescription": "Test play",
+        "playDescriptionWithJerseyNumbers": "Test play with numbers",
+        "playState": "COMPLETE",
+        "playStats": [],
         "playType": "RUSH",
+        "playTypeCode": 1,
+        "possessionTeamId": "TB",
+        "preSnapHomeScore": 0,
+        "preSnapVisitorScore": 0,
         "quarter": 1,
+        "timeOfDayUTC": "2024-01-01T18:00:00Z",
+        "visitorScore": 0,
         "yardline": "TB 30",
-        "yardsToGo": 10
+        "yardlineNumber": 30,
+        "yardlineSide": "TB",
+        "yardsToGo": 10,
+        "expectedPoints": 1.5,
+        "absoluteYardlineNumber": 30,
+        "actualYardlineForFirstDown": "TB 40",
+        "actualYardsToGo": 10,
+        "endGameClock": "14:55",
+        "isChangeOfPossession": False,
+        "isPlayedOutPlay": True,
+        "isRedzonePlay": False,
+        "playDirection": "R",
+        "startGameClock": "15:00",
+        "expectedPointsAdded": 0.1,
+        "preSnapHomeTeamWinProbability": 0.52,
+        "preSnapVisitorTeamWinProbability": 0.48,
+        "postPlayHomeTeamWinProbability": 0.53,
+        "postPlayVisitorTeamWinProbability": 0.47,
+        "homeTimeoutsLeft": 3,
+        "visitorTimeoutsLeft": 3
     },
     "playId": 1,
     "schedule": {
@@ -31,6 +73,8 @@ MOCK_PLAY_SUMMARY = {
         "gameTime": "13:00",
         "gameTimeEastern": "13:00",
         "gameType": "REG",
+        "homeDisplayName": "Tampa Bay Buccaneers",
+        "homeNickname": "Bucs",
         "homeTeam": {
             "teamId": "TB",
             "smartId": "TB",
@@ -43,6 +87,25 @@ MOCK_PLAY_SUMMARY = {
             "conferenceAbbr": "NFC",
             "divisionAbbr": "NFC South"
         },
+        "homeTeamAbbr": "TB",
+        "homeTeamId": "TB",
+        "isoTime": "2024-01-01T18:00:00Z",
+        "networkChannel": "CBS",
+        "ngsGame": True,
+        "season": 2024,
+        "seasonType": "REG",
+        "site": {
+            "smartId": "TB",
+            "siteId": 1,
+            "siteFullName": "Raymond James Stadium",
+            "siteCity": "Tampa",
+            "siteState": "FL",
+            "postalCode": "33607",
+            "roofType": "OPEN"
+        },
+        "smartId": "TB-KC-2024",
+        "visitorDisplayName": "Kansas City Chiefs",
+        "visitorNickname": "Chiefs",
         "visitorTeam": {
             "teamId": "KC",
             "smartId": "KC",
@@ -55,6 +118,10 @@ MOCK_PLAY_SUMMARY = {
             "conferenceAbbr": "AFC",
             "divisionAbbr": "AFC West"
         },
+        "visitorTeamAbbr": "KC",
+        "visitorTeamId": "KC",
+        "week": 1,
+        "weekNameAbbr": "WK1",
         "score": {
             "time": "15:00",
             "phase": "1",
@@ -76,7 +143,9 @@ MOCK_PLAY_SUMMARY = {
                 "pointOT": 0,
                 "timeoutsRemaining": 3
             }
-        }
+        },
+        "validated": True,
+        "releasedToClubs": True
     },
     "homeIsOffense": True,
     "away": [],
@@ -132,6 +201,7 @@ def test_get_play_summary(scraper, mock_session):
     mock_response = Mock()
     mock_response.json.return_value = MOCK_PLAY_SUMMARY
     mock_response.raise_for_status.return_value = None
+    mock_response.status_code = 200
     mock_session.get.return_value = mock_response
     
     # Set bearer token
@@ -154,6 +224,7 @@ def test_get_plays_data(scraper, mock_session):
     mock_response = Mock()
     mock_response.json.return_value = MOCK_PLAYS_RESPONSE
     mock_response.raise_for_status.return_value = None
+    mock_response.status_code = 200
     mock_session.get.return_value = mock_response
     
     # Set bearer token

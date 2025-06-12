@@ -14,12 +14,13 @@ import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import logging
-from models import (
+from ..models.models import (
     NFLData, SeasonData, SeasonTypeData, WeekData, Game, GameInfo,
     Teams, Team, TeamInfo, TeamLocation, TeamGameStats,
     GameSituation, Venue, BettingOdds, Score, Timeouts, PlaysResponse,
     PlaySummary, Play
 )
+from ..database.db_utils import NFLDatabaseManager
 
 # Configure logging
 logging.basicConfig(
@@ -96,11 +97,7 @@ class NFLGameScraper:
         self.season_types = ['REG', 'POST']  # Regular season and postseason
         self.weeks = {
             'REG': [f'WEEK_{i}' for i in range(1, 19)],  # Weeks 1-18 for regular season
-<<<<<<< HEAD
-            'POST': ['1', '2', '3', '4']  # Playoff weeks
-=======
             'POST': ['WC', 'DIV', 'CONF', 'SB']  # Playoff weeks
->>>>>>> 756ae13 (API stats)
         }
 
     def generate_game_url(self, season: int, season_type: str, week: str, game_id: str) -> str:
@@ -189,10 +186,6 @@ class NFLGameScraper:
                 "Accept": "application/json",
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             }
-<<<<<<< HEAD
-            print(url)
-=======
->>>>>>> 756ae13 (API stats)
             
             response = self.session.get(url, headers=headers)
             response.raise_for_status()
@@ -419,29 +412,16 @@ class NFLGameScraper:
         # Enrich with odds data
         if odds_data and 'games' in odds_data:
             for game in odds_data['games']:
-<<<<<<< HEAD
-                # Match using team abbreviations
-                home_abbr = game_data['home_team'].get('abbreviation')
-                away_abbr = game_data['away_team'].get('abbreviation')
-                if (game.get('homeTeamAbbr') == home_abbr and 
-                    game.get('visitorTeamAbbr') == away_abbr):
-                    game_odds = {
-=======
                 # Match using gameId or team combinations
                 if (str(game.get('gameKey')) == game_id or 
                     (game.get('homeTeamAbbr') == game_data['home_team'].get('abbreviation') and 
                      game.get('visitorTeamAbbr') == game_data['away_team'].get('abbreviation'))):
                     game_data['betting'] = {
->>>>>>> 756ae13 (API stats)
                         'moneyline': game.get('moneyline', {}),
                         'spread': game.get('spread', {}),
                         'totals': game.get('totals', {}),
                         'updated_at': game.get('updatedAt')
                     }
-<<<<<<< HEAD
-                    print(f"Found odds for {home_abbr} vs {away_abbr}")
-=======
->>>>>>> 756ae13 (API stats)
                     break
 
         return game_data
@@ -581,42 +561,6 @@ class NFLGameScraper:
         self.save_progress(all_data, prefix='full_game_data_complete')
         return all_data
 
-<<<<<<< HEAD
-    def save_progress(self, data: NFLData, prefix: str = None):
-        """Save the current progress to database or JSON file."""
-        if self.use_database and self.db_manager:
-            # Save to database
-            saved_count = 0
-            for season in data.seasons.values():
-                for season_type_data in season.types.values():
-                    for week_data in season_type_data.weeks.values():
-                        for game in week_data.games:
-                            try:
-                                self.db_manager.save_game(game)
-                                saved_count += 1
-                            except Exception as e:
-                                logger.error(f"Error saving game {game.game_info.id} to database: {e}")
-            logger.info(f"Saved {saved_count} games to database")
-        else:
-            # Fall back to JSON file storage
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            # Determine the appropriate prefix based on the mode
-            if prefix is None:
-                prefix = 'api_data' if self.api_only else 'nfl_game_map'
-                
-            # Create output directory if it doesn't exist
-            os.makedirs('data', exist_ok=True)
-            
-            # Generate filename with timestamp
-            output_file = os.path.join('data', f'{prefix}_{timestamp}.json')
-            
-            # Convert Pydantic model to JSON
-            with open(output_file, 'w') as f:
-                json.dump(data.model_dump(by_alias=True), f, indent=4)
-            
-            print(f"Progress saved to {output_file}")
-=======
     def save_progress(self, data: Dict, prefix: str = None):
         """Save the current progress to a JSON file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -636,7 +580,6 @@ class NFLGameScraper:
             json.dump(data, f, indent=4)
         
         print(f"Progress saved to {output_file}")
->>>>>>> 756ae13 (API stats)
 
     def login(self):
         """Handle the NFL Pro login process."""
@@ -728,6 +671,7 @@ class NFLGameScraper:
             # Fetch data from APIs
             live_scores = self.get_live_scores(season, season_type, week)
             odds_data = self.get_odds_data(season, season_type, week)
+            standings_data = self.get_standings_data(season, season_type)
             
             # Process games data
             games = []
@@ -850,7 +794,10 @@ class NFLGameScraper:
                                 is_goal_to_go=game.get('isGoalToGo')
                             ),
                             betting=game_odds,
-                            metadata=game_metadata,
+                            metadata={
+                                **game_metadata,
+                                'standings': standings_data  # Include standings data in metadata
+                            },
                             plays=plays_list  # Add plays to the game data
                             metadata=game_metadata,
                             plays=plays_list  # Add plays to the game data
@@ -959,188 +906,6 @@ class NFLGameScraper:
                     'week': week,
                     'timestamp': datetime.now().isoformat()
                 },
-<<<<<<< HEAD
-                games=games
-            )
-            
-            return week_data
-            
-        except Exception as e:
-            logger.error(f"Error fetching API data: {str(e)}")
-            logger.error(f"Error fetching API data: {str(e)}")
-            return WeekData(metadata={}, games=[])
-
-    def scrape_single_game(self, game_id: str, season: int = 2024, season_type: str = 'REG', week: str = 'WEEK_1') -> Optional[Game]:
-        """Scrape data for a single game by its ID."""
-        try:
-            logger.info(f"Scraping single game: {game_id}")
-            
-            # Get game metadata
-            game_metadata = self.get_game_metadata(game_id)
-            if not game_metadata:
-                logger.error(f"Failed to fetch metadata for game {game_id}")
-                return None
-            
-            # Extract season info from metadata if available
-            if 'season' in game_metadata:
-                season = game_metadata['season']
-            if 'seasonType' in game_metadata:
-                season_type = game_metadata['seasonType']
-            if 'week' in game_metadata:
-                week = game_metadata['week']
-                # Convert week number to WEEK_X format if needed
-                if season_type == 'REG' and isinstance(week, int):
-                    week = f'WEEK_{week}'
-            
-            logger.info(f"Game details: Season {season}, Type {season_type}, Week {week}")
-            
-            # Get plays data
-            smart_id = game_metadata.get('smartId', game_id)
-            logger.info(f"Using game ID for plays: {smart_id} (original: {game_id})")
-            plays_data = self.get_plays_data(season, season_type, week, smart_id)
-            plays_list = plays_data.plays if plays_data else []
-            
-            # Get additional data
-            live_scores = self.get_live_scores(season, season_type, week)
-            odds_data = self.get_odds_data(season, season_type, week)
-            
-            # Find this specific game in live scores
-            game_live_data = None
-            if live_scores and 'games' in live_scores:
-                for game in live_scores['games']:
-                    if game.get('gameId') == game_id:
-                        game_live_data = game
-                        break
-            
-            # Find odds for this game
-            game_odds = None
-            if odds_data and 'games' in odds_data:
-                home_abbr = game_metadata.get('homeTeam', {}).get('abbr')
-                away_abbr = game_metadata.get('visitorTeam', {}).get('abbr')
-                for odds in odds_data['games']:
-                    if (odds.get('homeTeamAbbr') == home_abbr and 
-                        odds.get('visitorTeamAbbr') == away_abbr):
-                        game_odds = BettingOdds.model_validate(odds)
-                        break
-            
-            # Create team objects
-            home_metadata = game_metadata.get('homeTeam', {})
-            away_metadata = game_metadata.get('visitorTeam', {})
-            
-            home_team = Team(
-                info=TeamInfo(
-                    id=home_metadata.get('smartId'),
-                    name=home_metadata.get('fullName'),
-                    nickname=home_metadata.get('nick'),
-                    logo=home_metadata.get('logo'),
-                    abbreviation=home_metadata.get('abbr'),
-                    location=TeamLocation(
-                        city_state=home_metadata.get('cityState'),
-                        conference=home_metadata.get('conferenceAbbr'),
-                        division=home_metadata.get('divisionAbbr')
-                    )
-                ),
-                game_stats=TeamGameStats(
-                    score=Score(**game_live_data.get('homeTeam', {}).get('score', {})) if game_live_data else Score(),
-                    timeouts=Timeouts(**game_live_data.get('homeTeam', {}).get('timeouts', {})) if game_live_data else Timeouts(),
-                    possession=game_live_data.get('homeTeam', {}).get('hasPossession', False) if game_live_data else False
-                )
-            )
-            
-            away_team = Team(
-                info=TeamInfo(
-                    id=away_metadata.get('smartId'),
-                    name=away_metadata.get('fullName'),
-                    nickname=away_metadata.get('nick'),
-                    logo=away_metadata.get('logo'),
-                    abbreviation=away_metadata.get('abbr'),
-                    location=TeamLocation(
-                        city_state=away_metadata.get('cityState'),
-                        conference=away_metadata.get('conferenceAbbr'),
-                        division=away_metadata.get('divisionAbbr')
-                    )
-                ),
-                game_stats=TeamGameStats(
-                    score=Score(**game_live_data.get('awayTeam', {}).get('score', {})) if game_live_data else Score(),
-                    timeouts=Timeouts(**game_live_data.get('awayTeam', {}).get('timeouts', {})) if game_live_data else Timeouts(),
-                    possession=game_live_data.get('awayTeam', {}).get('hasPossession', False) if game_live_data else False
-                )
-            )
-            
-            # Create game object
-            game_data = Game(
-                game_info=GameInfo(
-                    id=game_id,
-                    season=season,
-                    season_type=season_type,
-                    week=week,
-                    status=game_live_data.get('phase') if game_live_data else None,
-                    display_status=game_live_data.get('displayStatus') if game_live_data else None,
-                    game_state=game_live_data.get('gameState') if game_live_data else None,
-                    attendance=game_live_data.get('attendance') if game_live_data else None,
-                    weather=game_live_data.get('weather') if game_live_data else None,
-                    gamebook_url=game_live_data.get('gameBookUrl') if game_live_data else None,
-                    date=game_metadata.get('gameDate'),
-                    time=game_metadata.get('gameTimeEastern'),
-                    network=game_metadata.get('networkChannel')
-                ),
-                venue=Venue.model_validate(game_metadata.get('site', {})) if 'site' in game_metadata else None,
-                broadcast=game_live_data.get('broadcastInfo', {}) if game_live_data else {},
-                teams=Teams(home=home_team, away=away_team),
-                situation=GameSituation(
-                    clock=game_live_data.get('clock') if game_live_data else None,
-                    quarter=game_live_data.get('quarter') if game_live_data else None,
-                    down=game_live_data.get('down') if game_live_data else None,
-                    distance=game_live_data.get('distance') if game_live_data else None,
-                    yard_line=game_live_data.get('yardLine') if game_live_data else None,
-                    is_red_zone=game_live_data.get('isRedZone') if game_live_data else None,
-                    is_goal_to_go=game_live_data.get('isGoalToGo') if game_live_data else None
-                ),
-                betting=game_odds,
-                metadata=game_metadata,
-                plays=plays_list
-            )
-            
-            logger.info(f"Successfully scraped game {game_id} with {len(plays_list)} plays")
-            return game_data
-            
-        except Exception as e:
-            logger.error(f"Error scraping single game {game_id}: {str(e)}")
-            return None
-
-    def fetch_all_api_data(self, start_season: int = 2024, end_season: int = 2024, game_limit: Optional[int] = None) -> NFLData:
-        """Fetch API data for all weeks and seasons within the specified range."""
-        all_data = NFLData(
-            seasons={},
-            metadata={
-                'last_updated': datetime.now().isoformat(),
-                'start_season': start_season,
-                'end_season': end_season,
-                'data_type': 'api_only',
-                'game_limit': game_limit
-                'data_type': 'api_only',
-                'game_limit': game_limit
-            }
-        )
-        
-        for season in range(start_season, end_season + 1):
-            season_data = SeasonData(types={})
-            
-            for season_type in self.season_types:
-                season_type_data = SeasonTypeData(weeks={})
-                
-                for week in self.weeks[season_type]:
-                    try:
-                        logger.info(f"\nProcessing: Season {season} - {season_type} - {week}")
-                        week_data = self.fetch_api_data(season, season_type, week, game_limit)
-                        logger.info(f"\nProcessing: Season {season} - {season_type} - {week}")
-                        week_data = self.fetch_api_data(season, season_type, week, game_limit)
-                        if week_data and week_data.games:
-                            season_type_data.weeks[week] = week_data
-                            
-                            # Save progress after each week
-                            all_data.seasons[season] = season_data
-=======
                 'games': games
             }
             
@@ -1176,7 +941,6 @@ class NFLGameScraper:
                             all_data['seasons'][season]['types'][season_type]['weeks'][week] = week_data
                             
                             # Save progress after each week
->>>>>>> 756ae13 (API stats)
                             self.save_progress(all_data)
                             
                             # Small delay between requests

@@ -25,6 +25,27 @@ uv pip install -e .
 pip install -e .
 ```
 
+## Project Structure
+
+The project has been reorganized for better maintainability:
+
+```
+nfl/
+├── src/                    # Core source code
+│   ├── scraper/           # Main scraping functionality
+│   ├── database/          # Database models and utilities
+│   ├── models/            # Pydantic data models
+│   └── utils/             # Utility functions
+├── analysis/              # Data analysis scripts
+├── scripts/               # Utility and development scripts
+├── tests/                 # Test files
+├── data/                  # Data storage
+├── docs/                  # Documentation
+└── main.py               # Main entry point
+```
+
+See [docs/STRUCTURE.md](docs/STRUCTURE.md) for detailed structure documentation.
+
 ## Configuration
 
 Create a `.env` file in the project root with the following:
@@ -58,47 +79,67 @@ BEARER_TOKEN=your-bearer-token
 
 ```bash
 # Scrape current week with database storage (default)
-python scrapeVideos.py --api-only
+python main.py --api-only
 
 # Scrape specific season/week
-python scrapeVideos.py --api-only --season 2024 --week WEEK_10
+python main.py --api-only --season 2024 --week 10
 
-# Use JSON storage instead of database
-python scrapeVideos.py --api-only --no-database
+# Scrape a specific game
+python main.py --game-id 2024010101
+
+# Use test data for development
+python main.py --test-data
 
 # Specify custom database path
-python scrapeVideos.py --api-only --db-path my_nfl_data.db
+python main.py --api-only --db-path my_nfl_data.db
+```
+
+### Data Analysis
+
+```bash
+# Analyze team performance (league-wide)
+python analysis/analyze_team_stats.py
+
+# Analyze specific team
+python analysis/analyze_team_stats.py --team-id KC
+
+# Analyze game script and context features
+python analysis/analyze_game_script.py
+
+# Analyze play result metrics
+python analysis/analyze_play_results.py
+
+# Analyze formation tendencies
+python analysis/analyze_formations.py
 ```
 
 ### Querying the Database
 
 ```bash
 # Show database summary
-python query_db.py
+python scripts/query_db.py
 
 # List games for a season
-python query_db.py --games --season 2024
+python scripts/query_db.py --games --season 2024
 
 # Get plays for a specific game
-python query_db.py --plays --game-id 2024010101
+python scripts/query_db.py --plays --game-id 2024010101
 
 # Show game statistics
-python query_db.py --stats --game-id 2024010101
-
-# Export data to JSON
-python query_db.py --games --season 2024 --export games_2024.json
+python scripts/query_db.py --stats --game-id 2024010101
 ```
 
-### Migrating JSON Data to Database
-
-If you have existing JSON data files:
+### Development Scripts
 
 ```bash
-# Migrate all JSON files from data directory
-python migrate_json_to_db.py
+# Test new field implementation
+python scripts/test_new_fields.py
 
-# Migrate specific file
-python migrate_json_to_db.py --json-file data/api_data_20240101.json
+# Migrate JSON data to database
+python scripts/migrate_json_to_db.py
+
+# Debug play statistics
+python scripts/debug_play_stats.py
 ```
 
 ## Database Schema

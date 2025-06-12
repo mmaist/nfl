@@ -1,9 +1,15 @@
 import pytest
 import json
 import os
+import sys
 from datetime import datetime
-from models import NFLData, SeasonData, SeasonTypeData, WeekData, Game
-from scrapeVideos import NFLGameScraper
+from unittest.mock import Mock, patch
+
+# Add src to path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.models.models import NFLData, SeasonData, SeasonTypeData, WeekData, Game
+from src.scraper.scraper import NFLGameScraper
+from src.database.db_utils import NFLDatabaseManager
 
 @pytest.fixture
 def test_data_dir(tmp_path):
@@ -233,4 +239,183 @@ def test_data_validation(test_data_dir, sample_game_data):
     
     # Should not raise an exception
     game = Game.model_validate(minimal_data)
-    assert game.game_info.id == "123" 
+    assert game.game_info.id == "123"
+
+class TestDataProcessingUtilities:
+    """Test data processing functionality in db_utils."""
+    
+    def test_calculate_time_remaining(self, test_db):
+        """Test time remaining calculation."""
+        # Test 1st quarter with 10:30 remaining
+        result = test_db._calculate_time_remaining(1, "10:30")
+        
+        assert result['time_remaining_half'] == 630 + 900  # 10:30 + 15 min for Q2
+        assert result['time_remaining_game'] == 630 + 2700  # 10:30 + 45 min remaining
+        assert result['is_two_minute_drill'] is False
+        
+        # Test 2nd quarter with 1:45 remaining (two-minute drill)
+        result = test_db._calculate_time_remaining(2, "1:45")
+        
+        assert result['time_remaining_half'] == 105  # 1:45 in seconds
+        assert result['is_two_minute_drill'] is True
+        
+        # Test 4th quarter
+        result = test_db._calculate_time_remaining(4, "5:00")
+        
+        assert result['time_remaining_game'] == 300  # 5 minutes
+        assert result['time_remaining_half'] == 300
+    
+    def test_analyze_defensive_personnel(self, test_db):
+        """Test defensive personnel analysis."""
+        # Test basic 4-3 defense
+        defensive_players = [
+            {'positionGroup': 'DL', 'position': 'DE'},
+            {'positionGroup': 'DL', 'position': 'DT'},
+            {'positionGroup': 'DL', 'position': 'DT'},
+            {'positionGroup': 'DL', 'position': 'DE'},
+            {'positionGroup': 'LB', 'position': 'LB'},
+            {'positionGroup': 'LB', 'position': 'LB'},
+            {'positionGroup': 'LB', 'position': 'LB'},
+            {'positionGroup': 'DB', 'position': 'CB'},
+            {'positionGroup': 'DB', 'position': 'CB'},
+            {'positionGroup': 'DB', 'position': 'FS'},
+            {'positionGroup': 'DB', 'position': 'SS'}
+        ]
+        
+        result = test_db._analyze_defensive_personnel(defensive_players)
+        
+        assert result['dl_count'] == 4
+        assert result['lb_count'] == 3
+        assert result['db_count'] == 4
+        assert result['defensive_formation'] == '4-3'
+        assert result['defensive_package'] == 'base'
+        assert result['box_count'] == 8  # 4 DL + 3 LB + 1 SS
+    
+    def test_analyze_defensive_personnel_nickel(self, test_db):
+        """Test nickel defense analysis."""
+        # Test nickel defense (5 DBs)
+        defensive_players = [
+            {'positionGroup': 'DL', 'position': 'DE'},
+            {'positionGroup': 'DL', 'position': 'DT'},
+            {'positionGroup': 'DL', 'position': 'DT'},
+            {'positionGroup': 'DL', 'position': 'DE'},
+            {'positionGroup': 'LB', 'position': 'LB'},
+            {'positionGroup': 'LB', 'position': 'LB'},
+            {'positionGroup': 'DB', 'position': 'CB'},
+            {'positionGroup': 'DB', 'position': 'CB'},
+            {'positionGroup': 'DB', 'position': 'CB'},  # Nickel CB
+            {'positionGroup': 'DB', 'position': 'FS'},
+            {'positionGroup': 'DB', 'position': 'SS'}
+        ]
+        
+        result = test_db._analyze_defensive_personnel(defensive_players)
+        
+        assert result['dl_count'] == 4
+        assert result['lb_count'] == 2
+        assert result['db_count'] == 5
+        assert result['defensive_formation'] == '4-2-5'
+        assert result['defensive_package'] == 'nickel'
+    
+    def test_calculate_weather_impact(self, test_db):
+        """Test weather impact calculation."""
+        # Test indoor game
+        game_info = Mock()
+        game_info.venue = Mock()
+        game_info.venue.roof_type = 'DOME'
+        
+        result = test_db._calculate_weather_impact(game_info)
+        
+        assert result['is_indoor_game'] is True
+        assert result['weather_impact_score'] == 0.0
+        
+        # Test high wind outdoor game
+        game_info.venue.roof_type = 'OPEN'
+        game_info.weather = "45°F, Wind NW 25 mph, Clear"
+        
+        result = test_db._calculate_weather_impact(game_info)
+        
+        assert result['is_indoor_game'] is False
+        assert result['weather_impact_score'] > 0.3  # High wind should have significant impact
+    
+    def test_calculate_field_position_context(self, test_db):
+        """Test field position context calculation."""
+        # Test own territory
+        play_details = Mock()
+        play_details.absolute_yardline_number = 15
+        
+        result = test_db._calculate_field_position_context(play_details)
+        
+        assert result['yards_from_own_endzone'] == 15
+        assert result['yards_from_opponent_endzone'] == 85
+        assert result['field_position_category'] == 'own_territory'
+        
+        # Test red zone
+        play_details.absolute_yardline_number = 85
+        
+        result = test_db._calculate_field_position_context(play_details)
+        
+        assert result['yards_from_opponent_endzone'] == 15
+        assert result['field_position_category'] == 'red_zone'
+        
+        # Test midfield
+        play_details.absolute_yardline_number = 50
+        
+        result = test_db._calculate_field_position_context(play_details)
+        
+        assert result['field_position_category'] == 'midfield'
+
+class TestGameContextCalculation:
+    """Test game context feature calculation."""
+    
+    def test_calculate_game_script_features(self, test_db):
+        """Test game script features calculation."""
+        # Mock play details and current play
+        play_details = Mock()
+        play_details.home_score = 21
+        play_details.visitor_score = 14
+        play_details.quarter = 2
+        
+        current_play = Mock()
+        current_play.possession_team_id = "TB"
+        current_play.home_team_id = "TB"  # Home team has possession
+        
+        result = test_db._calculate_game_script_features(play_details, current_play)
+        
+        assert result['is_winning_team'] is True  # Home team is winning 21-14
+        assert result['is_losing_team'] is False
+        assert result['is_comeback_situation'] is False  # Not 4th quarter
+        assert result['is_blowout_situation'] is False  # 7 point game
+        assert result['game_competitive_index'] > 0.6  # Should be competitive
+    
+    def test_calculate_game_script_comeback(self, test_db):
+        """Test comeback situation detection."""
+        play_details = Mock()
+        play_details.home_score = 10
+        play_details.visitor_score = 21  # Away team winning by 11
+        play_details.quarter = 4  # 4th quarter
+        
+        current_play = Mock()
+        current_play.possession_team_id = "TB"
+        current_play.home_team_id = "TB"  # Home team has possession and is losing
+        
+        result = test_db._calculate_game_script_features(play_details, current_play)
+        
+        assert result['is_winning_team'] is False
+        assert result['is_losing_team'] is True
+        assert result['is_comeback_situation'] is True  # Down by 11 in 4th quarter
+    
+    def test_calculate_timeout_context(self, test_db):
+        """Test timeout context calculation."""
+        play_details = Mock()
+        play_details.home_timeouts_left = 2
+        play_details.visitor_timeouts_left = 1
+        
+        current_play = Mock()
+        current_play.possession_team_id = "TB"
+        current_play.home_team_id = "TB"  # Home team has possession
+        
+        result = test_db._calculate_timeout_context(play_details, current_play)
+        
+        assert result['possessing_team_timeouts'] == 2
+        assert result['opposing_team_timeouts'] == 1
+        assert result['timeout_advantage'] == 1  # Home team has 1 more timeout 

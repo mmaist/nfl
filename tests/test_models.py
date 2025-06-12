@@ -1,5 +1,10 @@
 import pytest
-from models import (
+import sys
+import os
+
+# Add src to path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.models.models import (
     PlaySummary, PlayDetails, PlayStat, Player,
     GameSchedule, TeamScore, GameScore, GameSite,
     ScheduleTeam, Play, PlaysResponse
