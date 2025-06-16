@@ -5,7 +5,9 @@ Main entry point for the NFL Data Scraper.
 
 import sys
 import os
+import json
 from src.scraper.scraper import NFLGameScraper
+from src.models.models import NFLData
 
 def main():
     """Main entry point for the scraper."""
@@ -18,8 +20,8 @@ def main():
                         help='Season to scrape (default: 2024)')
     parser.add_argument('--week', type=str, default='current',
                         help='Week to scrape (default: current)')
-    parser.add_argument('--test-data', action='store_true',
-                        help='Use test data instead of live scraping')
+    parser.add_argument('--test-data', type=str,
+                        help='Use test data from specified JSON file')
     parser.add_argument('--game-id', type=str,
                         help='Scrape a specific game ID')
     parser.add_argument('--db-path', type=str, default='nfl_data.db',
@@ -58,7 +60,22 @@ def main():
         elif args.test_data:
             # Use test data
             print("Using test data...")
-            scraper.scrape_with_test_data()
+            try:
+                with open(args.test_data, 'r') as f:
+                    test_data = json.load(f)
+                    # Add metadata if missing
+                    if 'metadata' not in test_data:
+                        test_data['metadata'] = {
+                            'scrape_timestamp': '2024-01-01T00:00:00',
+                            'source': 'test_data'
+                        }
+                    all_data = NFLData.model_validate(test_data)
+                print(f"Successfully loaded test data from {args.test_data}")
+                
+                # Save the validated data
+                scraper.save_progress(all_data.model_dump(), prefix='test_data_validated')
+            except Exception as e:
+                print(f"Error loading test data: {str(e)}")
         else:
             # Scrape season/week
             print(f"Scraping season {args.season}, week {args.week}")

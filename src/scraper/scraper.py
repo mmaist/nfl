@@ -60,6 +60,24 @@ class NFLGameScraper:
                        status_forcelist=[500, 502, 503, 504])
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
+        # Initialize browser only if not in API-only mode
+        if not api_only:
+            # Initialize Chrome options
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument('--headless')  # Run in headless mode
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            
+            self.driver = webdriver.Chrome(options=chrome_options)
+            self.wait = WebDriverWait(self.driver, 10)
+        
+        # Define season types and weeks
+        self.season_types = ['REG', 'POST']  # Regular season and postseason
+        self.weeks = {
+            'REG': [f'WEEK_{i}' for i in range(1, 19)],  # Weeks 1-18 for regular season
+            'POST': ['WC', 'DIV', 'CONF', 'SB']  # Playoff weeks
+        }
+
     def _load_bearer_token(self):
         """Load bearer token, handling potential dotenv escaping issues."""
         # First try normal dotenv
@@ -81,24 +99,6 @@ class NFLGameScraper:
         if token:
             logger.info(f"Loaded bearer token from environment (length: {len(token)})")
         return token
-        
-        # Initialize browser only if not in API-only mode
-        if not api_only:
-            # Initialize Chrome options
-            chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_argument('--headless')  # Run in headless mode
-            chrome_options.add_argument('--no-sandbox')
-            chrome_options.add_argument('--disable-dev-shm-usage')
-            
-            self.driver = webdriver.Chrome(options=chrome_options)
-            self.wait = WebDriverWait(self.driver, 10)
-        
-        # Define season types and weeks
-        self.season_types = ['REG', 'POST']  # Regular season and postseason
-        self.weeks = {
-            'REG': [f'WEEK_{i}' for i in range(1, 19)],  # Weeks 1-18 for regular season
-            'POST': ['WC', 'DIV', 'CONF', 'SB']  # Playoff weeks
-        }
 
     def generate_game_url(self, season: int, season_type: str, week: str, game_id: str) -> str:
         """Generate the URL for a specific game."""
@@ -288,11 +288,6 @@ class NFLGameScraper:
     def enrich_game_data(self, game_data: Dict, standings_data: Dict, live_scores: Dict, odds_data: Dict) -> Dict:
         """Enrich game data with standings, live scores, and odds information."""
         game_id = game_data['game_info']['id']
-=======
-    def enrich_game_data(self, game_data: Dict, standings_data: Dict, live_scores: Dict, odds_data: Dict) -> Dict:
-        """Enrich game data with standings, live scores, and odds information."""
-        game_id = game_data['game_id']
->>>>>>> 756ae13 (API stats)
         
         # Enrich with standings data
         if standings_data and 'weeks' in standings_data:
@@ -686,10 +681,7 @@ class NFLGameScraper:
                         game_id = game.get('gameId')
                         if not game_id:
                             logger.warning(f"Skipping game without ID")
-                            logger.warning(f"Skipping game without ID")
                             continue
-                        
-                        logger.info(f"Processing game {game_id}")
                         
                         logger.info(f"Processing game {game_id}")
                         
@@ -714,7 +706,6 @@ class NFLGameScraper:
                                 if (odds.get('homeTeamAbbr') == home_abbr and 
                                     odds.get('visitorTeamAbbr') == away_abbr):
                                     game_odds = BettingOdds.model_validate(odds)
-                                    logger.info(f"Found odds for {home_abbr} vs {away_abbr}")
                                     logger.info(f"Found odds for {home_abbr} vs {away_abbr}")
                                     break
                         
@@ -798,126 +789,33 @@ class NFLGameScraper:
                                 **game_metadata,
                                 'standings': standings_data  # Include standings data in metadata
                             },
-                            plays=plays_list  # Add plays to the game data
-                            metadata=game_metadata,
-                            plays=plays_list  # Add plays to the game data
+                            plays=plays_list
                         )
                         
                         games.append(game_data)
                         logger.info(f"Successfully processed game {game_id}")
-                        logger.info(f"Successfully processed game {game_id}")
                         
                     except Exception as e:
-                        logger.error(f"Error processing game: {str(e)}")
                         logger.error(f"Error processing game: {str(e)}")
                         continue
             
             # Create week data
             week_data = WeekData(
                 metadata={
-=======
-                for game in live_scores['games']:
-                    game_id = game['gameId']
-                    
-                    # Get detailed game metadata
-                    game_metadata = self.get_game_metadata(game_id)
-                    
-                    # Find odds for this game
-                    game_odds = None
-                    if odds_data and 'games' in odds_data:
-                        for odds in odds_data['games']:
-                            if (odds.get('homeTeamId') == game['homeTeam']['teamId'] and 
-                                odds.get('visitorTeamId') == game['awayTeam']['teamId']):
-                                game_odds = odds
-                                break
-                    
-                    game_data = {
-                        'game_info': {
-                            'id': game_id,
-                            'season': season,
-                            'season_type': season_type,
-                            'week': week,
-                            'status': game['phase'],
-                            'display_status': game['displayStatus'],
-                            'game_state': game['gameState'],
-                            'attendance': game.get('attendance'),
-                            'weather': game.get('weather'),
-                            'gamebook_url': game.get('gameBookUrl'),
-                            'date': game.get('date'),
-                            'time': game.get('time')
-                        },
-                        'venue': game.get('venue', {}),
-                        'broadcast': game.get('broadcastInfo', {}),
-                        'teams': {
-                            'home': {
-                                'info': {
-                                    'id': game['homeTeam']['teamId'],
-                                    'name': game['homeTeam']['fullName'],
-                                    'logo': game['homeTeam']['currentLogo'],
-                                    'abbreviation': game['homeTeam'].get('abbreviation')
-                                },
-                                'game_stats': {
-                                    'score': game['homeTeam']['score'],
-                                    'timeouts': game['homeTeam']['timeouts'],
-                                    'possession': game['homeTeam'].get('hasPossession', False)
-                                }
-                            },
-                            'away': {
-                                'info': {
-                                    'id': game['awayTeam']['teamId'],
-                                    'name': game['awayTeam']['fullName'],
-                                    'logo': game['awayTeam']['currentLogo'],
-                                    'abbreviation': game['awayTeam'].get('abbreviation')
-                                },
-                                'game_stats': {
-                                    'score': game['awayTeam']['score'],
-                                    'timeouts': game['awayTeam']['timeouts'],
-                                    'possession': game['awayTeam'].get('hasPossession', False)
-                                }
-                            }
-                        },
-                        'situation': {
-                            'clock': game.get('clock'),
-                            'quarter': game.get('quarter'),
-                            'down': game.get('down'),
-                            'distance': game.get('distance'),
-                            'yard_line': game.get('yardLine'),
-                            'is_red_zone': game.get('isRedZone'),
-                            'is_goal_to_go': game.get('isGoalToGo')
-                        },
-                        'betting': {
-                            'odds': game_odds,
-                            'updated_at': game_odds.get('updatedAt') if game_odds else None
-                        }
-                    }
-                    
-                    # Add metadata from game-specific API if available
-                    if game_metadata:
-                        game_data['metadata'] = game_metadata
-                    
-                    games.append(game_data)
-            
-            # Create a structured response
-            api_data = {
-                'metadata': {
->>>>>>> 756ae13 (API stats)
                     'season': season,
                     'season_type': season_type,
                     'week': week,
                     'timestamp': datetime.now().isoformat()
                 },
-                'games': games
-            }
+                games=games
+            )
             
-            return api_data
+            return week_data
             
         except Exception as e:
             print(f"Error fetching API data: {str(e)}")
             return {}
 
-<<<<<<< HEAD
-    def fetch_all_api_data(self, start_season: int = 2024, end_season: int = 2024) -> Dict:
-=======
     def scrape_single_game(self, game_id: str, season: int = 2024, season_type: str = 'REG', week: str = 'WEEK_1') -> Optional[Game]:
         """Scrape data for a single game by its ID."""
         try:
@@ -1071,33 +969,21 @@ class NFLGameScraper:
             return None
 
     def fetch_all_api_data(self, start_season: int = 2024, end_season: int = 2024, game_limit: Optional[int] = None) -> NFLData:
->>>>>>> b53d627 (Reorganize repository structure and fix postseason week handling)
         """Fetch API data for all weeks and seasons within the specified range."""
-        all_data = {
-            'seasons': {},
-            'metadata': {
-                'last_updated': datetime.now().isoformat(),
-                'start_season': start_season,
-                'end_season': end_season,
-                'data_type': 'api_only'
-            }
-        }
+        all_seasons = {}
         
         for season in range(start_season, end_season + 1):
-            all_data['seasons'][season] = {'types': {}}
+            season_types = {}
             
             for season_type in self.season_types:
-                all_data['seasons'][season]['types'][season_type] = {'weeks': {}}
+                weeks = {}
                 
                 for week in self.weeks[season_type]:
                     try:
-                        print(f"\nProcessing: Season {season} - {season_type} - {week}")
-                        week_data = self.fetch_api_data(season, season_type, week)
+                        logger.info(f"Processing: Season {season} - {season_type} - {week}")
+                        week_data = self.fetch_api_data(season, season_type, week, game_limit)
                         if week_data:
-                            all_data['seasons'][season]['types'][season_type]['weeks'][week] = week_data
-                            
-                            # Save progress after each week
-                            self.save_progress(all_data)
+                            weeks[week] = week_data
                             
                             # Small delay between requests
                             time.sleep(2)
@@ -1105,13 +991,20 @@ class NFLGameScraper:
                         logger.error(f"Error fetching data for {season} {season_type} {week}: {str(e)}")
                         continue
                 
-                season_data.types[season_type] = season_type_data
+                season_types[season_type] = SeasonTypeData(weeks=weeks)
             
-            all_data.seasons[season] = season_data
-=======
-                        print(f"Error fetching data for {season} {season_type} {week}: {str(e)}")
-                        continue
->>>>>>> 756ae13 (API stats)
+            all_seasons[season] = SeasonData(types=season_types)
+        
+        # Create NFLData object
+        all_data = NFLData(
+            seasons=all_seasons,
+            metadata={
+                'last_updated': datetime.now().isoformat(),
+                'start_season': start_season,
+                'end_season': end_season,
+                'data_type': 'api_only'
+            }
+        )
         
         # Save final complete dataset
         self.save_progress(all_data, prefix='api_data_complete')
@@ -1132,7 +1025,6 @@ def main():
     parser.add_argument('--start-season', type=int, default=2024, help='Start season year')
     parser.add_argument('--end-season', type=int, default=2024, help='End season year')
     parser.add_argument('--resume-from', type=str, help='Resume from a previous JSON file')
-<<<<<<< HEAD
     parser.add_argument('--week', type=str, help='Specific week to scrape (e.g., "WEEK_1" for regular season or "1" for postseason)')
     parser.add_argument('--season-type', type=str, choices=['REG', 'POST'], default='REG', help='Season type (REG or POST)')
     parser.add_argument('--test-data', type=str, help='Use test data from specified JSON file instead of making API calls')
@@ -1145,7 +1037,6 @@ def main():
     
     if not args.api_only and (not email or not password):
         logger.error("Please ensure NFL_EMAIL and NFL_PASSWORD are set in your .env file")
-        logger.error("Please ensure NFL_EMAIL and NFL_PASSWORD are set in your .env file")
         return
     
     scraper = NFLGameScraper(
@@ -1153,8 +1044,6 @@ def main():
         password=password, 
         api_only=args.api_only,
         use_database=not args.no_database,
-        db_path=args.db_path,
-        skip_play_summaries=args.skip_play_summaries
         db_path=args.db_path,
         skip_play_summaries=args.skip_play_summaries
     )
@@ -1207,8 +1096,6 @@ def main():
                     season_type=args.season_type,
                     week=args.week,
                     game_limit=args.game_limit
-                    week=args.week,
-                    game_limit=args.game_limit
                 )
                 
                 # Create a full NFLData structure using Pydantic models
@@ -1230,17 +1117,13 @@ def main():
                         'end_season': args.start_season,
                         'data_type': 'api_only_single_week',
                         'game_limit': args.game_limit
-                        'data_type': 'api_only_single_week',
-                        'game_limit': args.game_limit
                     }
                 )
                 
                 scraper.save_progress(all_data, prefix='api_data_single_week')
                 logger.info(f"Completed fetching API data for {args.season_type} {args.week}")
-                logger.info(f"Completed fetching API data for {args.season_type} {args.week}")
             else:
                 # TODO: Implement single week scraping with plays
-                logger.warning("Single week scraping with plays not yet implemented")
                 logger.warning("Single week scraping with plays not yet implemented")
         elif args.resume_from:
             # Load previous data and continue scraping
@@ -1264,7 +1147,6 @@ def main():
         
     finally:
         scraper.close()
->>>>>>> 756ae13 (API stats)
 
 if __name__ == "__main__":
     main()
