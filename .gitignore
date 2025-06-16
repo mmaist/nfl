@@ -177,6 +177,8 @@ cython_debug/
 .env
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 databases/
 output/
 temp/
