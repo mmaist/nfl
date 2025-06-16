@@ -915,7 +915,163 @@ class NFLGameScraper:
             print(f"Error fetching API data: {str(e)}")
             return {}
 
+<<<<<<< HEAD
     def fetch_all_api_data(self, start_season: int = 2024, end_season: int = 2024) -> Dict:
+=======
+    def scrape_single_game(self, game_id: str, season: int = 2024, season_type: str = 'REG', week: str = 'WEEK_1') -> Optional[Game]:
+        """Scrape data for a single game by its ID."""
+        try:
+            logger.info(f"Scraping single game: {game_id}")
+            
+            # Get game metadata
+            game_metadata = self.get_game_metadata(game_id)
+            if not game_metadata:
+                logger.error(f"Failed to fetch metadata for game {game_id}")
+                return None
+            
+            # Extract season info from metadata if available
+            if 'season' in game_metadata:
+                season = game_metadata['season']
+            if 'seasonType' in game_metadata:
+                season_type = game_metadata['seasonType']
+            if 'week' in game_metadata:
+                week = game_metadata['week']
+                # Convert week number to proper format
+                if season_type == 'REG' and isinstance(week, int):
+                    week = f'WEEK_{week}'
+                elif season_type == 'POST' and isinstance(week, int):
+                    # Postseason weeks: 18->1, 19->2, 20->3, 21->4 (Wild Card->Super Bowl)
+                    # But sometimes it's 21->1, 22->2, 23->3, 24->4
+                    if week >= 21:
+                        postseason_week = week - 20  # 21->1, 22->2, 23->3, 24->4
+                    elif week >= 18:
+                        postseason_week = week - 17  # 18->1, 19->2, 20->3, 21->4
+                    else:
+                        postseason_week = week  # Already in correct format
+                    week = str(postseason_week)
+            
+            logger.info(f"Game details: Season {season}, Type {season_type}, Week {week}")
+            
+            # Get plays data
+            smart_id = game_metadata.get('smartId', game_id)
+            logger.info(f"Using game ID for plays: {smart_id} (original: {game_id})")
+            plays_data = self.get_plays_data(season, season_type, week, smart_id)
+            plays_list = plays_data.plays if plays_data else []
+            
+            # Get additional data
+            live_scores = self.get_live_scores(season, season_type, week)
+            odds_data = self.get_odds_data(season, season_type, week)
+            standings_data = self.get_standings_data(season, season_type)
+            
+            # Find this specific game in live scores
+            game_live_data = None
+            if live_scores and 'games' in live_scores:
+                for game in live_scores['games']:
+                    if game.get('gameId') == game_id:
+                        game_live_data = game
+                        break
+            
+            # Find odds for this game
+            game_odds = None
+            if odds_data and 'games' in odds_data:
+                home_abbr = game_metadata.get('homeTeam', {}).get('abbr')
+                away_abbr = game_metadata.get('visitorTeam', {}).get('abbr')
+                for odds in odds_data['games']:
+                    if (odds.get('homeTeamAbbr') == home_abbr and 
+                        odds.get('visitorTeamAbbr') == away_abbr):
+                        game_odds = BettingOdds.model_validate(odds)
+                        break
+            
+            # Create team objects
+            home_metadata = game_metadata.get('homeTeam', {})
+            away_metadata = game_metadata.get('visitorTeam', {})
+            
+            home_team = Team(
+                info=TeamInfo(
+                    id=home_metadata.get('smartId'),
+                    name=home_metadata.get('fullName'),
+                    nickname=home_metadata.get('nick'),
+                    logo=home_metadata.get('logo'),
+                    abbreviation=home_metadata.get('abbr'),
+                    location=TeamLocation(
+                        city_state=home_metadata.get('cityState'),
+                        conference=home_metadata.get('conferenceAbbr'),
+                        division=home_metadata.get('divisionAbbr')
+                    )
+                ),
+                game_stats=TeamGameStats(
+                    score=Score(**game_live_data.get('homeTeam', {}).get('score', {})) if game_live_data else Score(),
+                    timeouts=Timeouts(**game_live_data.get('homeTeam', {}).get('timeouts', {})) if game_live_data else Timeouts(),
+                    possession=game_live_data.get('homeTeam', {}).get('hasPossession', False) if game_live_data else False
+                )
+            )
+            
+            away_team = Team(
+                info=TeamInfo(
+                    id=away_metadata.get('smartId'),
+                    name=away_metadata.get('fullName'),
+                    nickname=away_metadata.get('nick'),
+                    logo=away_metadata.get('logo'),
+                    abbreviation=away_metadata.get('abbr'),
+                    location=TeamLocation(
+                        city_state=away_metadata.get('cityState'),
+                        conference=away_metadata.get('conferenceAbbr'),
+                        division=away_metadata.get('divisionAbbr')
+                    )
+                ),
+                game_stats=TeamGameStats(
+                    score=Score(**game_live_data.get('awayTeam', {}).get('score', {})) if game_live_data else Score(),
+                    timeouts=Timeouts(**game_live_data.get('awayTeam', {}).get('timeouts', {})) if game_live_data else Timeouts(),
+                    possession=game_live_data.get('awayTeam', {}).get('hasPossession', False) if game_live_data else False
+                )
+            )
+            
+            # Create game object
+            game_data = Game(
+                game_info=GameInfo(
+                    id=game_id,
+                    season=season,
+                    season_type=season_type,
+                    week=week,
+                    status=game_live_data.get('phase') if game_live_data else None,
+                    display_status=game_live_data.get('displayStatus') if game_live_data else None,
+                    game_state=game_live_data.get('gameState') if game_live_data else None,
+                    attendance=game_live_data.get('attendance') if game_live_data else None,
+                    weather=game_live_data.get('weather') if game_live_data else None,
+                    gamebook_url=game_live_data.get('gameBookUrl') if game_live_data else None,
+                    date=game_metadata.get('gameDate'),
+                    time=game_metadata.get('gameTimeEastern'),
+                    network=game_metadata.get('networkChannel')
+                ),
+                venue=Venue.model_validate(game_metadata.get('site', {})) if 'site' in game_metadata else None,
+                broadcast=game_live_data.get('broadcastInfo', {}) if game_live_data else {},
+                teams=Teams(home=home_team, away=away_team),
+                situation=GameSituation(
+                    clock=game_live_data.get('clock') if game_live_data else None,
+                    quarter=game_live_data.get('quarter') if game_live_data else None,
+                    down=game_live_data.get('down') if game_live_data else None,
+                    distance=game_live_data.get('distance') if game_live_data else None,
+                    yard_line=game_live_data.get('yardLine') if game_live_data else None,
+                    is_red_zone=game_live_data.get('isRedZone') if game_live_data else None,
+                    is_goal_to_go=game_live_data.get('isGoalToGo') if game_live_data else None
+                ),
+                betting=game_odds,
+                metadata={
+                    **game_metadata,
+                    'standings': standings_data  # Include standings data in metadata
+                },
+                plays=plays_list
+            )
+            
+            logger.info(f"Successfully scraped game {game_id} with {len(plays_list)} plays")
+            return game_data
+            
+        except Exception as e:
+            logger.error(f"Error scraping single game {game_id}: {str(e)}")
+            return None
+
+    def fetch_all_api_data(self, start_season: int = 2024, end_season: int = 2024, game_limit: Optional[int] = None) -> NFLData:
+>>>>>>> b53d627 (Reorganize repository structure and fix postseason week handling)
         """Fetch API data for all weeks and seasons within the specified range."""
         all_data = {
             'seasons': {},

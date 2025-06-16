@@ -172,5 +172,27 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-/data/*
+
+# NFL Scraper specific
 .env
+*.db
+*.db-journal
+databases/
+output/
+temp/
+logs/
+*.log
+data/
+nfl_*.json
+parallel_scraper_*.log
+production_*.json
+*.egg-info/
+
+# macOS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
