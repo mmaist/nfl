@@ -198,4 +198,8 @@ production_*.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Cleanup files
 SECURITY_CLEANUP.md
+GIT_CLEANUP.md
+clean-git-history.sh
