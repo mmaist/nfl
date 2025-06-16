@@ -196,3 +196,4 @@ production_*.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+SECURITY_CLEANUP.md
